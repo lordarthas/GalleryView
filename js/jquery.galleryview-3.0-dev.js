@@ -23,11 +23,13 @@ if (typeof Object.create !== 'function') {
 
 		this.src = { 
 			panel: img.attr('src'),
-			frame: img.data('frame') || img.attr('src')
+			frame: img.data('frame') || img.attr('src'),
+			zoom: img.data('zoom') || img.attr('src') // arthas
 		};
 		this.scale = {
 			panel: null,
-			frame: null
+			frame: null,
+			zoom: null  // arthas
 		};
 		this.height = 0;
 		this.width = 0;
@@ -228,8 +230,6 @@ if (typeof Object.create !== 'function') {
 			dom.gv_overlay.css({
 				width: this.opts.panel_width
 			});
-			
-			
 			
 			$.each(this.gvImages,function(i,img) {
 				dom.gv_panelWrap.append(dom.gv_panel.clone(true));
@@ -488,7 +488,7 @@ if (typeof Object.create !== 'function') {
 					});
 					_img.hide().css('visibility','visible');
 					_img.remove().appendTo(parent);
-					
+
 					if(parentType === 'frame') {
 						_img.fadeIn();
 						parent.parent().removeClass('gv_frame-loading');
@@ -507,10 +507,13 @@ if (typeof Object.create !== 'function') {
 				// store eventual image container as data property
 				// append to temporary storage element and set src
 				if(self.opts.show_panels) {
-					img.clone(true)
-						.data('parent',{type:'gv_panels',index:i})
+					var pimg = img.clone(true);
+					pimg.data('parent',{type:'gv_panels',index:i})
 						.appendTo(dom.gv_imageStore)
-						.attr('src',gvImage.src.panel);
+						.attr('src',gvImage.src.panel)
+						.attr('data-zoom',gvImage.src.zoom)  // arthas
+						.attr('data-title',gvImage.attrs.title)  // arthas
+					;
 				}
 				
 				if(self.opts.show_filmstrip) {
@@ -546,8 +549,8 @@ if (typeof Object.create !== 'function') {
 		
 		showItem: function(i) {
 			if(isNaN(i)) { return; }
-			if(!this.opts.show_filmstrip) { i = i % this.numImages; }
-			
+			if(!this.opts.show_filmstrip) { i = i % this.numImages; }	
+
 			var self = this,
 				dom = this.dom,
 				frame_i = i,
@@ -569,8 +572,7 @@ if (typeof Object.create !== 'function') {
 				}
 			}
 			
-			panel = dom.gv_panels.eq(i);
-			
+			panel = dom.gv_panels.eq(i);		
 			playing = this.playing;
 			
 			if(playing) {
@@ -614,7 +616,7 @@ if (typeof Object.create !== 'function') {
 					panel.prependTo(dom.gv_panelWrap);
 					break;
 			}
-			
+
 			this.updateOverlay(i);
 			
 			this.iterator = i;
@@ -879,6 +881,13 @@ if (typeof Object.create !== 'function') {
 			}).bind('mouseout.galleryview',function(){
 				self.hidePanelNav();
 			});
+			// arthas
+			dom.gv_panelWrap.css("cursor", "pointer"); // arthas TODO: move to CSS
+			dom.gv_panelWrap.bind('click.galleryview',function(){
+				var panel = dom.gv_panels.eq(self.iterator);
+				var panelimg = panel.children("img");
+				$.prettyPhoto.open(panelimg.data("zoom"), panelimg.data("title"), '');
+			});
 		},
 		
 		unbindActions: function() {
@@ -890,7 +899,8 @@ if (typeof Object.create !== 'function') {
 			dom.gv_panelNavPrev.unbind('click.galleryview');
 			dom.gv_navWrap.undelegate('div','click.galleryview');
 			dom.gv_filmstripWrap.undelegate('.gv_frame','click.galleryview');
-		},
+			dom.gv_panelWrap.unbind('click.galleryview'); // arthas
+		},		
 		
 		showPanelNav: function() {
 			var self = this,
